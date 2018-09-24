@@ -1,4 +1,4 @@
-# Nomes de variáveis ------------------------------------------------------
+# Nome dos objetos/variáveis ----------------------------------------------
 
 # Os nomes devem começar com uma letra. Podem conter letras, números, _ e .
 # É recomendado usar snake_case.
@@ -8,12 +8,13 @@ outrasPessoasUsamCamelCase
 algumas.pessoas.usam.pontos
 E_algumasPoucas.Pessoas_RENUNCIAMconvenções
 
-# Criando variáveis -------------------------------------------------------
+
+# Criando objetos/variáveis -----------------------------------------------
 
 obj <- 1
 obj
 
-# ATALHO: ALT + -
+# ATALHO: ALT - (alt menos)
 
 # Vetores -----------------------------------------------------------------
 
@@ -67,6 +68,7 @@ funcao_com_muitos_argumentos(
   argumento_4 = 11
 )
 
+# ATALHO: CTRL+I
 
 # Pipe (%>%) --------------------------------------------------------------
 
@@ -106,3 +108,8 @@ recipiente(rep("farinha", 2), "água", "fermento", "leite", "óleo") %>%
   esfrie("geladeira", "20min")
 
 # ATALHO: CTRL + SHIFT + M
+
+
+# Cheatsheets -------------------------------------------------------------
+
+# Menu help -> cheatsheets

@@ -1,0 +1,278 @@
+---
+title: "IMDB"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    theme: journal
+editor_options: 
+  chunk_output_type: console
+---
+
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(tidyverse)
+imdb <- read_rds("data/imdb.rds")
+```
+
+Visão geral
+======================================================================
+
+Row {data-height=110}
+----------------------------------------------------------------------
+
+### O problema
+
+O estúdio de filmes FilmR precisa escolher um(a) diretor(a) e um(a) protagonista para o seu próximo filme. Para isso ele conduziu uma análise exploratória em uma base de dados com diversas informações de quase 4 mil filmes lançados nos Estados Unidos desde 1916. O objetivo da FilmR é identificar os diretores e atores que trariam o maior retorno financeiro para a produtora. O gênero do filme será definido com base no(a) diretor(a) e protagonista escolhidos. Também não seria ruim se o filme fosse um sucesso de crítica.
+
+Row
+-----------------------------------------------------------------------
+
+### Filmes
+
+```{r}
+valueBox(nrow(imdb), icon = "fa-film")
+```
+
+### # Diretores
+
+```{r}
+valueBox(n_distinct(imdb$diretor), icon = "fa-video")
+```
+
+### # Atores
+
+```{r}
+atores <- c(imdb$ator_1, imdb$ator_2, imdb$ator_3)
+valueBox(n_distinct(atores), icon = "fa-user")
+```
+
+Row
+--------------------------------------------------------------
+
+### Relação entre nota e lucro
+
+```{r}
+imdb <- imdb %>% mutate(lucro = receita - orcamento)
+
+imdb %>%
+  filter(!is.na(lucro), !is.na(nota_imdb)) %>%
+  ggplot(aes(x = nota_imdb, y = lucro)) +
+  geom_point(size = 0.5) +
+  stat_smooth(se = FALSE, color = "darksalmon") +
+  labs(x = "Nota IMDB", y = "Lucro") +
+  scale_y_continuous(labels = scales::dollar_format(big.mark = "."))
+```
+
+> Parece que se a nota é inferiror a uns 7, ela não é muito relacionada ao lucro do filme.
+Mas em geral filmes com notas bem altas lucram mais do que os outros.
+
+### Relação entre o orçamento e lucro
+
+```{r}
+imdb %>%
+  filter(!is.na(lucro), !is.na(orcamento)) %>%
+  ggplot(aes(x = orcamento, y = lucro)) +
+  geom_point(size = 0.5) +
+  stat_smooth(method = "lm", se = FALSE, color = "darksalmon") +
+  labs(x = "Orçamento", y = "Lucro") +
+  scale_y_continuous(labels = scales::dollar_format(big.mark = ".")) +
+  scale_x_continuous(labels = scales::dollar_format(big.mark = "."))
+```
+
+---
+
+> Filmes com maior orçamento têm maior possibilidade de prejuizo. Essas duas variáveis não são fortemente correlacionadas.
+
+Gêneros
+==============================================================
+
+
+Row
+---------------------------------------------------------------
+
+### Lucro por gênero
+
+```{r}
+imdb <- imdb %>%
+  mutate(
+    dv_acao = str_detect(generos, "Action"),
+    dv_aventura = str_detect(generos, "Adventure"),
+    dv_drama = str_detect(generos, "Drama"),
+    dv_romance = str_detect(generos, "Romance"),
+    dv_comedia = str_detect(generos, "Comedy"),
+    dv_animacao = str_detect(generos, "Animation"),
+    lucro = receita - orcamento
+  )
+
+imdb_genero <- imdb %>%
+  gather(genero, valor, starts_with("dv")) %>%
+  filter(valor) %>%
+  mutate(
+    genero = case_when(
+      genero == "dv_acao" ~ "Ação",
+      genero == "dv_aventura" ~ "Aventura",
+      genero == "dv_drama" ~ "Drama",
+      genero == "dv_romance" ~ "Romance",
+      genero == "dv_comedia" ~ "Comédia",
+      genero == "dv_animacao" ~ "Animação"
+    )
+  )
+
+imdb_genero %>%
+  mutate(
+    genero = fct_reorder(as_factor(genero), lucro, na.rm = TRUE)
+    ) %>%
+  ggplot(aes(x = genero, y = lucro)) +
+  geom_boxplot() +
+  scale_y_continuous(label = scales::dollar_format()) +
+  labs(x = "Gênero", y = "Lucro") +
+  theme_minimal()
+```
+
+> O lucro mediano dos filmes parece ser bem parecido entre os principais gêneros. No entanto, parece que alguns gêneros tem bem mais filmes que estouraram.
+
+### Filmes que estouraram
+
+```{r}
+calcula_valor_corte <- function(x) {
+ quartis <- quantile(x, c(0.25,0.5,0.75), na.rm = TRUE)
+ quartis[2] + 2*(quartis[3] - quartis[1])
+}
+
+valor_corte <- calcula_valor_corte(imdb$lucro)
+
+imdb_genero %>%
+  mutate(
+    outlier = lucro > valor_corte
+  ) %>%
+  group_by(genero) %>%
+  summarise(outlier = mean(outlier, na.rm = TRUE)) %>%
+  mutate(genero = fct_reorder(genero, outlier)) %>%
+  ggplot(aes(x = genero, y =outlier)) +
+  geom_col(fill = "darksalmon") +
+  scale_y_continuous(labels = scales::percent_format()) +
+  theme_minimal() +
+  labs(y = "Percentual de filmes que estouraram", x = "Gênero")
+```
+
+> Vemos que os filmes de animação tem a maior chance de "estourar" seguidos por aventura e ação.
+
+Diretores {data-orientation=columns}
+============================================
+
+Column
+-------------------------------------------
+
+### Diretores com mais filmes
+
+Sabemos que o estúdio quer contratar um(a) diretor(a) experiente, para ter menos riscos. Por isso vamos listar os diretores com maior número de filmes realizados.
+
+```{r}
+diretores_experientes <- imdb %>%
+  filter(!is.na(diretor)) %>%
+  group_by(Diretor = diretor) %>%
+  summarise(`Quantidade de Filmes` = n()) %>%
+  top_n(10) %>%
+  arrange(desc(`Quantidade de Filmes`))
+
+imdb_experientes <- diretores_experientes %>%
+  left_join(imdb, by = c(Diretor = "diretor"))
+
+imdb_experientes %>%
+  group_by(Diretor) %>%
+  summarise(
+    `Quantidade de Filmes` = n(),
+    `Nota média` = mean(nota_imdb, na.rm = TRUE),
+    `Orçamento` = mean(orcamento, na.rm = TRUE),
+    `Lucro` = mean(lucro, na.rm = TRUE)
+  ) %>%
+  arrange(desc(`Quantidade de Filmes`)) %>%
+  mutate(
+    `Nota média` = scales::format_format(decimal.mark=",")(round(`Nota média`, 1)),
+    Orçamento = scales::dollar_format(big.mark = ".")(Orçamento),
+    Lucro = scales::dollar_format(big.mark = ".")(Lucro)
+  ) %>%
+  knitr::kable()
+```
+
+Column {.tabset}
+--------------------------------
+
+### Notas no IMDB
+
+```{r fig.height=7}
+imdb_experientes %>%
+  ggplot(aes(x = ano, y = nota_imdb)) +
+  geom_point() +
+  geom_line() +
+  stat_smooth(method = "lm", se = FALSE, color = "darksalmon") +
+  facet_wrap(~Diretor, ncol = 2) +
+  labs(x = "Ano", y = "Nota IMDB")
+```
+
+### Lucro
+
+```{r fig.height=7}
+imdb_experientes %>%
+  ggplot(aes(x = ano, y = lucro)) +
+  geom_point() +
+  geom_line() +
+  stat_smooth(method = "lm", se = FALSE, color = "darksalmon") +
+  facet_wrap(~Diretor, ncol = 2) +
+  scale_y_continuous(label = scales::dollar_format(big.mark = ".")) +
+  labs(x = "Ano", y = "Lucro")
+```
+
+Atores {data-orientation=columns}
+============================================
+
+Column
+--------------------------------------------
+
+### Principais atores
+
+O estúdio prefere um ator com certa experiência, que pode ser medida pelo número de filmes. No entanto, não quer deixar a qualidade de lado - quer os atores de participaram com filmes que tiveram boas avaliações.
+
+```{r}
+imdb %>%
+  select(ano, nota_imdb, lucro, starts_with("ator")) %>%
+  gather(id_ator, ator, starts_with("ator")) %>%
+  group_by(Ator = ator) %>%
+  summarise(
+    n = n(),
+    `Nota IMDB` = mean(nota_imdb, na.rm = TRUE),
+    `Ano Último Filme` = max(ano, na.rm = TRUE),
+    `Lucro` = mean(lucro, na.rm = TRUE)
+  ) %>%
+  filter(n >= 10) %>%
+  filter(row_number(desc(`Nota IMDB`)) <= 15) %>%
+  arrange(desc(`Nota IMDB`)) %>%
+  mutate(
+    `Nota IMDB` = scales::format_format(decimal.mark=",")(round(`Nota IMDB`, 1)),
+    Lucro = scales::dollar_format(big.mark = ".")(Lucro)
+  ) %>%
+  rename(`Qtd Filmes` = n) %>%
+  knitr::kable()
+```
+
+# Column
+--------------------------------------
+
+### Relação Atores e Diretores
+
+Sabemos que em geral os diretores possuem preferência por alguns atores. Por isso,
+listamos para cada diretor que consideramos anteriormente, o ator que mais trabalhou em conjunto.
+
+```{r}
+imdb_experientes %>%
+  gather(id_ator, ator, starts_with("ator")) %>%
+  group_by(Diretor, ator) %>%
+  summarise(n = n()) %>%
+  group_by(Diretor) %>%
+  filter(row_number(desc(n)) == 1) %>%
+  knitr::kable()
+```
+
+
+

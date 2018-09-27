@@ -17,10 +17,10 @@ library(ggplot2)
 ```{r}
 imdb <- read_rds("data/imdb.rds")
 imdb <- imdb %>% mutate(lucro = receita - orcamento)
-
 ```
 
-# Será que filmes com maior orçamento tendem a arrecadar mais?
+
+> Pergunta: será que filmes com maior orçamento tendem a arrecadar mais?
 
 Gráfico de dispersão: arrecadação vs orçamento
 
@@ -50,9 +50,7 @@ imdb %>%
   ggplot() +
   geom_point(mapping = aes(x = orcamento, y = receita, color = lucro))
 
-ggplot(imdb) +
-  geom_point(mapping = aes(x = orcamento, y = receita, color = lucro))
-  
+# O que aconteceria se usássemos uma variável numérica para representar a cor dos pontos?
 ```
 
 
@@ -70,6 +68,7 @@ imdb %>%
   labs(x = "Orçamento", y = "Arrecadação", color = "Houve lucro?") 
 ```
 
+
 Vamos também mudar as labels nos eixos.
 
 ```{r}
@@ -84,6 +83,8 @@ imdb %>%
   scale_y_continuous(label = scales::dollar_format()) +
   scale_x_continuous(label = scales::dollar_format())
 ```
+
+Também podemos colocar as variáveis na escala de milhões.
 
 ```{r}
 imdb %>%
@@ -106,40 +107,24 @@ imdb %>%
   scale_x_continuous(label = scales::dollar_format())
 ```
 
-# Exercício: será que filmes mais caros tendem a receber uma nota maior?
+
+> Exercício: será que filmes mais caros tendem a receber uma nota maior?
 
 1. Crie um gráfico de dispersão da nota do imdb pelo orçamento.
 
 ```{r}
-imdb %>% 
-  ggplot() +
-  geom_point(aes(x = orcamento, y = nota_imdb))
+
 ```
 
 2. Pinte todos os pontos do gráfico de azul.
 
 ```{r}
-imdb %>% 
-  ggplot() +
-  geom_point(aes(x = orcamento, y = nota_imdb, color = "blue"))
 
-imdb %>% 
-  ggplot() +
-  geom_point(aes(x = orcamento, y = nota_imdb), color = "blue")
 ```
 
 3. Refaça o gráfico do item 1. apenas para filmes com classificação etária livre. Também refaça para os filmes com classificação etária "a partir de 13 anos".
 
 ```{r}
-imdb %>% 
-  filter(classificacao == "Livre") %>% 
-  ggplot() +
-  geom_point(aes(x = orcamento, y = nota_imdb))
-
-imdb %>% 
-  filter(classificacao == "A partir de 13 anos") %>% 
-  ggplot() +
-  geom_point(aes(x = orcamento, y = nota_imdb))
 
 ```
 
@@ -153,19 +138,21 @@ imdb %>%
   ggplot() +
   geom_point(aes(x = orcamento, y = nota_imdb)) +
   facet_wrap(~classificacao)
+```
 
+A função `facet_grid()` permite combinar os níveis de duas variáveis.
 
+```{r}
 imdb %>%
   filter(classificacao %in% c("Livre", "A partir de 13 anos")) %>%
+  mutate(ano_cat = ifelse(ano < 2000, "Antigos", "Recentes")) %>% 
   ggplot() +
   geom_point(aes(x = orcamento, y = nota_imdb)) +
-  facet_grid(. ~ classificacao)
-
-
+  facet_grid(ano_cat ~ classificacao)
 ```
 
 
-# Quais são os diretores que fizeram mais filmes e quantos filmes eles fizeram?
+> Pergunta: quais são os diretores que fizeram mais filmes e quantos filmes eles fizeram?
 
 Podemos fazer um gráfico de barras.
 
@@ -203,7 +190,7 @@ imdb %>%
 
 Também seria interessante ordenar as barras de forma crescente. Para isso, precisamos lidar com `fatores`.
 
-Um fator é a representação de uma variavel categórica dentro do R. Ele será apresentado como um caracter, mas por trás ele é tratado como um inteiro.
+Um fator é a representação numérica de uma variavel categórica dentro do R. Ele será mostrado como texto (categoria/level), mas por trás ele é tratado como um inteiro.
 
 O melhor pacote para tratar fatores é o `forcats`.
 
@@ -213,7 +200,7 @@ O melhor pacote para tratar fatores é o `forcats`.
 
 - é especialmente útil para visualização
 
-- `fct_reorder`/ `fct_infreq`, `fct_collapse`, `fct_lump`
+- `fct_reorder`, `fct_infreq`, `fct_collapse`, `fct_lump`
 
 - são usados dentro de mutate()
 
@@ -247,7 +234,7 @@ imdb %>%
     diretor = fct_reorder(diretor, n)
   ) %>% 
   ggplot() +
-  geom_bar(aes(x = diretor, y = n), stat = "identity", fill = "darkblue", color = "red") +
+  geom_bar(aes(x = diretor, y = n), stat = "identity", fill = "darkblue") +
   theme(axis.text.x = element_text(angle = 45, vjust = 0.5))
 ```
 
@@ -307,56 +294,31 @@ imdb %>%
   )
 ```
 
-# Exercício
+> Exercício
 
 1. Refaça o último gráfico utilizando a agora a variável `orçamento` como resposta.
 
 ```{r}
-imdb %>% 
-  filter(diretor == "Steven Spielberg") %>%
-  ggplot() +
-  geom_histogram(
-    aes(x = orcamento),
-    fill = "lightblue", 
-    color = "darkblue", 
-    binwidth = 50000000
-  )
 
-ggtitle() # títulos
 ```
 
 
 2.a Selecione um gênero e visualize os diretores com mais filmes dentro desse gênero.
 
 ```{r}
-imdb %>% 
-  filter(str_detect(generos,  "Comedy")) %>% 
-  count(diretor) %>% 
-  filter(!is.na(diretor)) %>% 
-  top_n(10, n) %>% 
-  ggplot() +
-  geom_bar(aes(x = diretor, y = n), stat = "identity")
+
 ```
 
 
 2.b Estude a distribuição da variável `lucro` para cada diretor.
 
 ```{r}
-diretores_comedia <- imdb %>% 
-  filter(str_detect(generos, "Comedy")) %>% 
-  count(diretor) %>% 
-  filter(!is.na(diretor)) %>% 
-  top_n(10, n)
 
-diretores_comedia %>% 
-  left_join(imdb, by = "diretor") %>% 
-  ggplot() +
-  geom_boxplot(aes(x = diretor, y = lucro))
 ```
 
 
 
-# Qual o comportamento das notas dos filmes do Spielberg no IMDB ao longo do tempo?
+> Pergunta: qual o comportamento das notas dos filmes do Spielberg no IMDB ao longo do tempo?
 
 Vamos fazer um gráfico de linhas das notas pelo ano.
 
@@ -403,24 +365,14 @@ imdb %>%
 ```
 
 
-## Exercícios
+> Exercícios
 
 Repita as análises acima, agora para os atores (vamos começar utilizando apenas a coluna `ator_1`:
 
-1. Selecione os atores com mais filmes. Visualize quem são os atores e o número de filmes que eles fizeram. Você pode ou não fazer a análise dentro de um gênero.
+1. Selecione os atores com mais filmes. Visualize quem são os atores e o número de filmes que eles fizeram. Você pode ou não fazer a análise para um gênero.
 
 ```{r}
-imdb %>% 
-  count(ator_1) %>% 
-  arrange(desc(n)) %>% 
-  top_n(10) %>% 
-  mutate(
-    ator_1 = as.factor(ator_1),
-    ator_1 = fct_reorder(ator_1, n)
-  ) %>% 
-  ggplot(aes(x = ator_1, y = n)) +
-  geom_bar(stat = "identity") +
-  theme(axis.text.x = element_text(vjust = 0.5, angle = 45))
+
 ```
 
 
@@ -428,45 +380,17 @@ imdb %>%
 desses atores.
 
 ```{r}
-atores_frequentes <- imdb %>% 
-  count(ator_1) %>% 
-  arrange(desc(n)) %>% 
-  top_n(10) %>% 
-  mutate(
-    ator_1 = as.factor(ator_1),
-    ator_1 = fct_reorder(ator_1, n)
-  )
 
-atores_frequentes %>% 
-  left_join(imdb, by = "ator_1") %>%
-  ggplot(aes(x = ator_1, y = lucro)) +
-  geom_boxplot()
-
-imdb %>% 
-  group_by(ator_1) %>% 
-  mutate(n = n()) %>%
-  filter(n >= 25) %>% 
-  ggplot(aes(x = ator_1, y = lucro)) +
-  geom_boxplot()
 ```
 
 
 3. Selecione um dos atores e estude a nota de seus filmes no IMDB ao longo do tempo.
 
 ```{r}
-imdb %>% 
-  filter(ator_1 == "Robert De Niro") %>%
-  group_by(ano) %>% 
-  mutate(nota_media = mean(nota_imdb, na.rm = TRUE)) %>% 
-  ggplot(aes(x = ano, y = nota_media)) +
-  geom_point() +
-  geom_line()
+
 ```
 
-
-
 --------
-
 
 E se quiséssemos utilizar as 3 colunas de atores?
 

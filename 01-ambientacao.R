@@ -14,6 +14,7 @@ E_algumasPoucas.Pessoas_RENUNCIAMconvenções
 obj <- 1
 obj
 
+# CTRL + ENTER
 # ATALHO: ALT - (alt menos)
 
 # Vetores -----------------------------------------------------------------
@@ -30,21 +31,24 @@ vetor <- 1:10
 # Caracteres (character, strings)
 
 obj <- "a"
-obj
+obj2 <- a
 
 # Bases (data.frame)
 
 mtcars
 
 as.numeric(obj)
+as.numeric("1")
 
 # Funções -----------------------------------------------------------------
 
-mean(seq(1, 10))
+seq(to = 10, from = 1, by = 2)
+
+mean(seq(1, 10, 2))
 
 seq(1, 10)
 1:10
-mean(x = 1:10)
+mean(x = c(1:10, NA), na.rm = TRUE)
 
 y <- seq(1, 10, length.out = 5)
 y
@@ -54,12 +58,12 @@ y
 install.packages(c("tidyverse", "rmarkdown", "devtools"))
 devtools::install_github("rstudio/flexdashboard")
 
-library(tidyverse)
+install.packages("tidyverse")
 
+library(dplyr)
+library(ggplot2)
 
 # Identação ---------------------------------------------------------------
-
-funcao_com_muitos_argumentos(argumento_1 = 10, argumento_2 = 14, argumento_3 = 30, argumento_4 = 11)
 
 funcao_com_muitos_argumentos(
   argumento_1 = 10, 
@@ -102,10 +106,11 @@ esfrie(
 
 recipiente(rep("farinha", 2), "água", "fermento", "leite", "óleo") %>%
   acrescente("farinha", até = "macio") %>%
-  bata(duraço = "3min") %>%
+  bata(duração = "3min") %>%
   coloque(lugar = "forma", tipo = "grande", untada = TRUE) %>%
   asse(duração = "50min") %>%
   esfrie("geladeira", "20min")
+
 
 # ATALHO: CTRL + SHIFT + M
 
